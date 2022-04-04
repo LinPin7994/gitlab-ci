@@ -1,0 +1,22 @@
+.k8s_deploy_helm:
+  stage: deploy
+  image: centosadmin/kubernetes-helm:3.1.2
+  tags:
+    - docker
+    - dind
+  script:
+    - |-
+        if [[ -d .helm ]]; then
+          helm_path=".helm"
+        else 
+          helm_path="helm-charts"
+        fi;
+        echo "VAR \"helm_path"\ set in $helm_path"
+        helm upgrade --install $CI_PROJECT_PATH_SLUG $helm_path
+        --set image=$NEXUS_URL:$NEXUS_PORT/$NEXUS_REPO/$CI_PROJECT_NAME
+        --set imageTag=$CI_COMMIT_REF_SLUG.$CI_PIPELINE_ID
+        --wait
+        --timeout 120s
+        --atomic
+        --debug
+        --namespace $namespace

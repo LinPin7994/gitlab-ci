@@ -1,0 +1,12 @@
+.build_docker_image:
+  stage: build
+  services:
+  - name: docker:19.03-dind
+  image: docker:19.03.12
+  tags:
+    - docker
+    - dind
+  script:
+   - docker login -u ${NEXUS_LOGIN} -p ${NEXUS_PASS} ${NEXUS_URL}:${NEXUS_PORT}
+   - docker build --tag ${NEXUS_URL}:${NEXUS_PORT}/${NEXUS_REPO}/${CI_PROJECT_NAME}:$CI_COMMIT_REF_SLUG.$CI_PIPELINE_ID .
+   - docker push ${NEXUS_URL}:${NEXUS_PORT}/${NEXUS_REPO}/${CI_PROJECT_NAME}:$CI_COMMIT_REF_SLUG.$CI_PIPELINE_ID

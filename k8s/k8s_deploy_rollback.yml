@@ -1,0 +1,12 @@
+.k8s_deploy_rollback:
+  stage: rollback
+  image: centosadmin/kubernetes-helm:3.1.2
+  tags:
+   - dind
+   - docker
+  script:
+    - helm rollback $CI_PROJECT_PATH_SLUG 0
+      --namespace default
+      --wait
+      --timeout 300s
+      --debug
