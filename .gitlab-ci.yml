@@ -1,0 +1,57 @@
+include:
+  - project: "root/general-cicd-pipelines"
+    ref: "main"
+    file: 
+      - "Docker/docker_build.yml"
+      - "k8s/k8s_connect_setup.yml"
+      - "k8s/k8s_deploy_helm.yml"
+variables:
+  K8S_API_URL: https://192.168.99.107:8443
+  namespace: "default"
+stages:
+  - build
+  - test
+  - cleanup
+  - deploy
+  - rollback
+default:
+  tags:
+    - docker
+build_job:
+  stage: build
+  extends: .build_docker_image
+test:
+  stage: test
+  image:
+    name: docker/compose:1.23.2
+    entrypoint: [""]
+  script:
+    - | 
+      docker-compose -p "$CI_PROJECT_NAME"_"$CI_PIPELINE_ID" up --abort-on-container-exit --exit-code-from test --quiet-pull
+cleanup:
+  stage: cleanup
+  image: 
+    name: docker/compose:1.23.2
+    entrypoint: [""]
+  script:
+    - docker-compose -p "$CI_PROJECT_NAME"_"$CI_PIPELINE_ID" down
+  when: always
+deploy:
+  stage: deploy
+  extends: 
+    - .setup_k8s_connect
+    - .k8s_deploy_helm
+  only:
+    - main
+rollback:
+  stage: rollback
+  extends: .setup_k8s_connect
+  script:
+    - helm rollback $CI_PROJECT_PATH_SLUG 0
+      --namespace default
+      --wait
+      --timeout 300s
+      --debug
+  only:
+    - main
+  when: manual
